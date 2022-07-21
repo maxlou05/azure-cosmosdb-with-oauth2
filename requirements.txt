@@ -1,2 +1,4 @@
 azure-data-tables
 Flask
+fastapi
+uvicorn[standard]

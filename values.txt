@@ -1,0 +1,8 @@
+prefix = "ncyd-inttest2*"
+description = "Integration Testing"
+appgw_public_ip = "https://20.83.178.57/"
+flux_config = "https://gitlabe2.ext.net.nokia.com/epsec/products/ncyd_flux_ottawa/-/tree/develop/clusters/team1_integration_test"
+acr = "ncydacrcandidates"
+cd_config = "https://gitlabe2.ext.net.nokia.com/epsec/products/netguard_cyberdome_customer_configs/-/tree/develop/configs/ncyd_ott_team1_integration_test"
+cd_pipeline = "https://gitlabe2.ext.net.nokia.com/epsec/products/netguard_cyberdome_infrastructure/-/pipelines/1948464"
+creation_date = "23/06/2022"
