@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, request
 import table_api
-import json
 
 app = Flask(__name__)
 
@@ -19,7 +18,7 @@ def myPublishFunc(conn_str, table_name, text_path):
 @app.get("/")
 # AKA @app.route(path, methods=["GET"])
 def index():
-    return "Welcome to my app!"
+    return {"Welcome message":"Welcome to my app!"}
 
 
 @app.post("/query")
