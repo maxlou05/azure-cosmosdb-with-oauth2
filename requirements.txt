@@ -1,4 +1,7 @@
 azure-data-tables
 Flask
 fastapi
+uvicorn
 uvicorn[standard]
+uvloop
+httptools
