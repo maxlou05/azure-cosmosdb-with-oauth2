@@ -43,13 +43,13 @@ def parse_bytes(text_bytes:bytes):
 
     text = text_bytes.decode("utf-8")
 
-    for line in text.split("\r"):
+    for line in text.split("\n"):
+        # Get rid of newline and carriage return characters
+        line.replace("\n", "")
+        line.replace("\r", "")
+
         # Split into two parts
         key_value = line.split(" = ")
-
-        # Get rid of newline characters
-        key_value[0] = key_value[0].replace("\n", "")
-        key_value[1] = key_value[1].replace("\n", "")
         
         # Strip the extra quatations
         if(key_value[0][0] == '"' and key_value[0][-1] == '"'):

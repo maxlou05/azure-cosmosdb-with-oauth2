@@ -14,22 +14,22 @@ datatosend = {"connection_string":connection_string, "table_name":table_name, "q
 # datatosend = {"connection_string":connection_string, "table_name":table_name}
 
 
-response = requests.put("https://ncydtestapi.azurewebsites.net/api/upload", files={"my_file":("my_file_name", open(text_path, "rb"))})
-# response = requests.put("http://localhost:8000/api/upload", files={"my_file":("my_file_name", open(text_path, "rb"))})
+# response = requests.put("https://ncydtestapi.azurewebsites.net/api/upload", files={"my_file":("my_file_name", open(text_path, "rb"))})
+response = requests.put("http://localhost:8000/api/upload", files={"my_file":("my_file_name", open(text_path, "rb"))})
 print(response.status_code)
 print(response.json())
 
 
 # Header is optional, using json parameter automatically changes it to application/json
-response = requests.post("https://ncydtestapi.azurewebsites.net/api/query", json=datatosend, headers=headers)
-# response = requests.post("http://localhost:8000/api/query", json=datatosend, headers=headers)
+# response = requests.post("https://ncydtestapi.azurewebsites.net/api/query", json=datatosend, headers=headers)
+response = requests.post("http://localhost:8000/api/query", json=datatosend, headers=headers)
 data = response.json()
 print(response.status_code)
 print(json.dumps(data, indent=True))
 
 
 datatosend = {"connection_string":connection_string, "table_name":table_name}
-response = requests.post("https://ncydtestapi.azurewebsites.net/api/publish", json=datatosend)
-# response = requests.post("http://localhost:8000/api/publish", json=datatosend)
+# response = requests.post("https://ncydtestapi.azurewebsites.net/api/publish", json=datatosend)
+response = requests.post("http://localhost:8000/api/publish", json=datatosend)
 print(response.status_code)
 print(json.dumps(response.json(), indent=True))

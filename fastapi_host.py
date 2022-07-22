@@ -65,8 +65,6 @@ def api_publish(entry:NewEntry, response:Response):
 @app.put("/api/upload", status_code=status.HTTP_201_CREATED)
 async def upload_file(my_file:UploadFile):
     global cached_file
-    print(my_file.filename)
-    print("uploadV1!!!!")
     content = await my_file.read()
     cached_file = table_api.parse_bytes(content)
     return {"message": "Successfully uploaded and parsed deployment information"}
