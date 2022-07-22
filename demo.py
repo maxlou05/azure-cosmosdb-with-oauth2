@@ -9,15 +9,8 @@ text_path = "./values.txt"
 # text_path = "C:/Users/mlou/Documents/azure_app/values.txt"
 
 headers = {"Content-Type": "application/json"}
-
 datatosend = {"connection_string":connection_string, "table_name":table_name, "query":query_string, "fields":fields}
 # datatosend = {"connection_string":connection_string, "table_name":table_name}
-
-
-# response = requests.put("https://ncydtestapi.azurewebsites.net/api/upload", files={"my_file":("my_file_name", open(text_path, "rb"))})
-response = requests.put("http://localhost:8000/api/upload", files={"my_file":("my_file_name", open(text_path, "rb"))})
-print(response.status_code)
-print(response.json())
 
 
 # Header is optional, using json parameter automatically changes it to application/json
@@ -30,6 +23,6 @@ print(json.dumps(data, indent=True))
 
 datatosend = {"connection_string":connection_string, "table_name":table_name}
 # response = requests.post("https://ncydtestapi.azurewebsites.net/api/publish", json=datatosend)
-response = requests.post("http://localhost:8000/api/publish", json=datatosend)
+response = requests.post("http://localhost:8000/api/publish", data=datatosend, files={"my_file":("my_file_name", open(text_path, "rb"))})
 print(response.status_code)
 print(json.dumps(response.json(), indent=True))
