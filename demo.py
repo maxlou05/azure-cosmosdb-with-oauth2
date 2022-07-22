@@ -5,6 +5,8 @@ connection_string = "DefaultEndpointsProtocol=https;AccountName=ncydtabledb;Acco
 table_name = "ncydconfigurationinfo"
 query_string = "RowKey eq 'id'"
 fields = ["PartitionKey", "RowKey", "new_property"]
+text_path = "./values.txt"
+# text_path = "C:/Users/mlou/Documents/azure_app/values.txt"
 
 headers = {"Content-Type": "application/json"}
 
@@ -12,8 +14,8 @@ datatosend = {"connection_string":connection_string, "table_name":table_name, "q
 # datatosend = {"connection_string":connection_string, "table_name":table_name}
 
 
-response = requests.put("https://ncydtestapi.azurewebsites.net/api/upload", files={"my_file":("my_file_name", open("C:/Users/mlou/Documents/azure_app/values.txt", "rb"))})
-response = requests.put("http://localhost:8000/api/upload", files={"my_file":("my_file_name", open("C:/Users/mlou/Documents/azure_app/values.txt", "rb"))})
+response = requests.put("https://ncydtestapi.azurewebsites.net/api/upload", files={"my_file":("my_file_name", open(text_path, "rb"))})
+# response = requests.put("http://localhost:8000/api/upload", files={"my_file":("my_file_name", open(text_path, "rb"))})
 print(response.status_code)
 print(response.json())
 
