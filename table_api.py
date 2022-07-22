@@ -45,17 +45,18 @@ def parse_bytes(text_bytes:bytes):
 
     for line in text.split("\n"):
         # Get rid of newline and carriage return characters
-        line.replace("\n", "")
-        line.replace("\r", "")
+        line = line.replace("\r", "")
 
-        # Split into two parts
+        # Split into two parts (key and value)
         key_value = line.split(" = ")
         
         # Strip the extra quatations
         if(key_value[0][0] == '"' and key_value[0][-1] == '"'):
-            out[key_value[0]] = key_value[1][1:-1]
+            key_value[0] = key_value[1][1:-1]
         if(key_value[1][0] == '"' and key_value[1][-1] == '"'):
-            out[key_value[0]] = key_value[1][1:-1]
+            key_value[1] = key_value[1][1:-1]
+    
+        out[key_value[0]] = key_value[1]
     
     # To be determined (these two fields are required, both need to be strings)
     # PartitionKey + RowKey combination needs to be unique
