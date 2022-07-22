@@ -38,6 +38,33 @@ def parse_data(path):
     return out
 
 
+def parse_bytes(text_bytes:bytes):
+    out = {}
+
+    text = text_bytes.decode("utf-8")
+
+    for line in text.split("\r"):
+        # Split into two parts
+        key_value = line.split(" = ")
+
+        # Get rid of newline characters
+        key_value[0] = key_value[0].replace("\n", "")
+        key_value[1] = key_value[1].replace("\n", "")
+        
+        # Strip the extra quatations
+        if(key_value[0][0] == '"' and key_value[0][-1] == '"'):
+            out[key_value[0]] = key_value[1][1:-1]
+        if(key_value[1][0] == '"' and key_value[1][-1] == '"'):
+            out[key_value[0]] = key_value[1][1:-1]
+    
+    # To be determined (these two fields are required, both need to be strings)
+    # PartitionKey + RowKey combination needs to be unique
+    out["PartitionKey"] = "pkey"
+    out["RowKey"] = str(uuid.uuid4())
+    
+    return out
+
+
 def connect_to_db(conn_str:str):
     return TableServiceClient.from_connection_string(conn_str)
 
