@@ -18,7 +18,7 @@ def myPublishFunc(conn_str, table_name, text_path):
 @app.get("/")
 # AKA @app.route(path, methods=["GET"])
 def index():
-    return {"Welcome message":"Welcome to my app!"}
+    return {"Welcome message":"Welcome to my Flask app!"}
 
 
 @app.post("/query")

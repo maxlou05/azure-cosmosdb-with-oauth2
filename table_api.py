@@ -12,7 +12,7 @@ DEFAULT_TABLE_NAME = "ncydconfigurationinfo"
 DEFAULT_CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=ncydtabledb;AccountKey=BgxGmRqfcRSU79yTwXFaU8xY20vEcfD9kRpRvoeickozvdqhGutqz0Bq7qNSBpBPGinQLQSr2obU036m1Foq5w==;TableEndpoint=https://ncydtabledb.table.cosmos.azure.com:443/;"
 
 
-def parse_data(path):
+def parse_data(path) -> Dict[str, Any]:
     out = {}
 
     with open(path, 'r') as file:
@@ -38,7 +38,7 @@ def parse_data(path):
     return out
 
 
-def parse_bytes(text_bytes:bytes):
+def parse_bytes(text_bytes:bytes) -> Dict[str, Any]:
     out = {}
 
     text = text_bytes.decode("utf-8")
@@ -83,7 +83,10 @@ def delete_entry(table:TableClient, partition_key:str, row_key:str):
 
 
 def get_entry(table:TableClient, partition_key:str, row_key:str):
-    return table.get_entity(partition_key, row_key)
+    try:
+        return table.get_entity(partition_key, row_key)
+    except:
+        return None
 
 
 def query(table:TableClient, query:Optional[str]=None, fields:Optional[List[str]]=None):
