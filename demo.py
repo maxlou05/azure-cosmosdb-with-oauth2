@@ -5,8 +5,8 @@ connection_string = "DefaultEndpointsProtocol=https;AccountName=ncydtabledb;Acco
 table_name = "ncydconfigurationinfo"
 query_string = "RowKey eq 'id'"
 fields = ["PartitionKey", "RowKey", "new_property"]
-# text_path = "./values.txt"
-text_path = "C:/Users/mlou/Documents/azure_app/values.txt"
+text_path = "./values.txt"
+# text_path = "C:/Users/mlou/Documents/azure_app/values.txt"
 
 
 payload = {"username":"admin", "password":"adminpw"}
@@ -26,12 +26,12 @@ payload = {"connection_string":connection_string, "table_name":table_name, "quer
 # payload = {"connection_string":connection_string, "table_name":table_name}
 
 # Authentication goes in the header
-# response = requests.post("https://ncydtestapi.azurewebsites.net/api/query", json=payload, headers=headers)
+# response = requests.post("https://ncydtestapi.azurewebsites.net/api/query", json=payload, headers=expired_token)
 response = requests.post("http://localhost:8000/api/query", json=payload, headers=expired_token)
-# response = requests.post("https://ncydtestapi.azurewebsites.net/api/query", json=payload, headers=headers)
 print(response.status_code)
 print(json.dumps(response.json(), indent=True))
 
+# response = requests.post("https://ncydtestapi.azurewebsites.net/api/query", json=payload, headers=headers)
 response = requests.post("http://localhost:8000/api/query", json=payload, headers=headers)
 print(response.status_code)
 data = response.json()

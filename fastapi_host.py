@@ -128,6 +128,7 @@ def fake_decode_token(token):
     # return User(**fake_user_db.get(token))
 
 
+# Probably should use async if using real database which takes time to load data
 def authenticate_user(fake_db, username, password):
     # See if this user exists in our database
     user = get_user(fake_db, username)
@@ -139,7 +140,7 @@ def authenticate_user(fake_db, username, password):
     return user
 
 
-def get_current_user(token:str = Depends(oauth2_scheme)):
+async def get_current_user(token:str = Depends(oauth2_scheme)):
     # It is standard to return the WWW-Authenticate header with value Bearer when using bearer tokens to authenticate
     credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials", headers={"WWW-Authenticate" : "Bearer"})
     # Decoding the token for the user information
@@ -162,7 +163,7 @@ def get_current_user(token:str = Depends(oauth2_scheme)):
     return current_user
 
 
-def get_current_user_email(current_user:User = Depends(get_current_user)):
+async def get_current_user_email(current_user:User = Depends(get_current_user)):
     if current_user.email is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This user did not provide an email :(")
     return current_user
@@ -183,7 +184,7 @@ def secret(user:User = Depends(get_current_user_email)):
 
 
 @app.post("/api/token", response_model=Token)
-def login(form_data:OAuth2PasswordRequestForm = Depends(OAuth2PasswordRequestForm)):
+async def login(form_data:OAuth2PasswordRequestForm = Depends(OAuth2PasswordRequestForm)):
     # Retrieving user info from the database (logging in)
     user = authenticate_user(fake_user_db, form_data.username, form_data.password)
     # If user doesn't exist, or not authenticated
@@ -198,7 +199,7 @@ def login(form_data:OAuth2PasswordRequestForm = Depends(OAuth2PasswordRequestFor
 
 
 @app.post("/api/query", status_code=status.HTTP_200_OK)
-def api_query(query:Query, user_permissions:Permissions = Depends(get_permissions)):
+async def api_query(query:Query, user_permissions:Permissions = Depends(get_permissions)):
     # Querying requires read permissions
     if(not user_permissions.read):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied: you do not have read permissions, please contact your system administrator")
@@ -224,7 +225,7 @@ async def api_publish(connection_string:str = Form(), table_name:str = Form(), m
 
 
 @app.post("/api/get", status_code=status.HTTP_200_OK)
-def api_get(entity:Entity, user_permissions:Permissions = Depends(get_permissions)):
+async def api_get(entity:Entity, user_permissions:Permissions = Depends(get_permissions)):
     # Getting requires read permissions
     if(not user_permissions.read):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied: you do not have read permissions, please contact your system administrator")
@@ -239,7 +240,7 @@ def api_get(entity:Entity, user_permissions:Permissions = Depends(get_permission
 
 
 @app.post("/api/delete", status_code=status.HTTP_200_OK)
-def api_delete(entity:Entity, user_permissions:Permissions = Depends(get_permissions)):
+async def api_delete(entity:Entity, user_permissions:Permissions = Depends(get_permissions)):
     # Deleting requires delete permissions
     if(not user_permissions.delete):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied: you do not have delete permissions, please contact your system administrator")
