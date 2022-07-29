@@ -1,4 +1,5 @@
 from azure.cosmos import CosmosClient
+from azure.identity import DefaultAzureCredential
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile, status, Depends
@@ -102,7 +103,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_user(username):
-    cosmosdb_acc = CosmosClient.from_connection_string(USER_DB_CONN_STR)
+    cosmosdb_acc = CosmosClient("https://ncydsqlcosmos.documents.azure.com:443/", DefaultAzureCredential(exclude_interactive_browser_credential=False))
+    # cosmosdb_acc = CosmosClient.from_connection_string(USER_DB_CONN_STR)
     userdb = cosmosdb_acc.get_database_client(USER_DB_NAME)
     container = userdb.get_container_client(USER_CONTAINER_NAME)
 
