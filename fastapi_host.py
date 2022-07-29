@@ -1,3 +1,4 @@
+from azure.cosmos import CosmosClient
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile, status, Depends
@@ -6,52 +7,61 @@ from jose import ExpiredSignatureError, JWTError, jwt
 from pydantic import BaseModel
 from passlib.context import CryptContext
 import table_api
+import os
 
 # Token specifications and tools
-# A 256-bit secret key
-SECRET_KEY = "6985bb584d3db7340ede1b18bac6b44f7a5415b56ef5dabfd9352a775b090289"
+# A 256-bit secret key (32 digit hexadecimal, or 64 letters total)
+SECRET_KEY = os.environ["JWK"]
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 
+# User and role database info
+USER_DB_CONN_STR = os.environ["CUSTOMCONNSTR_USER"]
+USER_DB_NAME = os.environ["USER_DB_NAME"]
+USER_CONTAINER_NAME = os.environ["USER_CONTAINER_NAME"]
 
-fake_user_db = {
-    "admin" : {
-        "username" : "admin",
-        "hashed_password" : "$2a$12$oHhJR57XnptaADwh0XZFs.d/wVUVVEwzjol.R2MwOlNyruzL2B4Fm", #adminpw
-        "read" : True,
-        "write" : True,
-        "delete" : True,
-        "email" : "myepicadminemail@email.com"
-    },
-    "standard_user" : {
-        "username" : "standard_user",
-        "hashed_password" : "$2a$12$wqp8f2TYuLMRBqV1o/5V5O7IFAHE9QgWNjkA4X6HLI6mSrYoDBf9K", #stdpw
-        "read" : True,
-        "write" : False,
-        "delete" : False
-    },
-    "developer" : {
-        "username" : "developer",
-        "hashed_password" : "$2a$12$nodSMUpetRhqnSK3U1TKsu3IhkfRkGV78AvxxnOl0mTvS3jaIrqre", #devpw
-        "read" : True,
-        "write" : True,
-        "delete" : False
-    }
-}
+
+# demo_user_db = {
+#     "admin" : {
+#         "id" : "admin",
+#         "hashed_password" : "$2a$12$oHhJR57XnptaADwh0XZFs.d/wVUVVEwzjol.R2MwOlNyruzL2B4Fm", #adminpw
+#         "permissions" : {
+#             "read" : True,
+#             "write" : True,
+#             "delete" : True},
+#         "email" : "myadmin@email.com"
+#     },
+#     "standard_user" : {
+#         "id" : "standard_user",
+#         "hashed_password" : "$2a$12$wqp8f2TYuLMRBqV1o/5V5O7IFAHE9QgWNjkA4X6HLI6mSrYoDBf9K", #stdpw
+#         "permissions" : {
+#             "read" : True,
+#             "write" : False,
+#             "delete" : False},
+#     },
+#     "dev" : {
+#         "id" : "dev",
+#         "hashed_password" : "$2a$12$nodSMUpetRhqnSK3U1TKsu3IhkfRkGV78AvxxnOl0mTvS3jaIrqre", #devpw
+#         "permissions" : {
+#             "read" : True,
+#             "write" : True,
+#             "delete" : False},
+#     }
+# }
 
 
 class Query(BaseModel):
-    connection_string : str
-    table_name : str
+    connection_string : Optional[str]
+    table_name : Optional[str]
     query : Optional[str]
     fields : Optional[List[str]]
 
 
 class Entity(BaseModel):
-    connection_string : str
-    table_name : str
-    partition_key : str
-    row_key : str
+    connection_string : Optional[str]
+    table_name : Optional[str]
+    partition_key : Optional[str]
+    id : str
 
 
 class Permissions(BaseModel):
@@ -60,9 +70,10 @@ class Permissions(BaseModel):
     delete : bool
 
 
-class User(Permissions):
+class User(BaseModel):
     username : str
     email : Optional[str]
+    permissions : Permissions
 
 
 class UserInDB(User):
@@ -90,13 +101,20 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def get_user(db, username):
-    if username in db:
-        # Process our user info into a python-friendly Pydantic model/class
-        # (this just saying the keyword arguments are in the dict, shortcut for specifying each key and value)
-        # ie UserInDB(key1=db[username][key1], key2=db[username][key2], ...)
-        return UserInDB(**db[username])
-    return None
+def get_user(username):
+    cosmosdb_acc = CosmosClient.from_connection_string(USER_DB_CONN_STR)
+    userdb = cosmosdb_acc.get_database_client(USER_DB_NAME)
+    container = userdb.get_container_client(USER_CONTAINER_NAME)
+
+    # Query for our user
+    results = list(container.query_items(query="SELECT * FROM c WHERE c.id = @username",
+        parameters=[dict(name="@username", value=username)],
+        enable_cross_partition_query=True
+    ))
+    if(len(results) == 0):
+        return None
+    else:
+        return UserInDB(**results[0], username=results[0]["id"])
 
 
 def get_hashed_password(plain_password):
@@ -116,28 +134,22 @@ def create_access_token(data:Dict, expires_delta:Optional[timedelta] = None):
     else:
         # If no specified token expiry date (for now, set it to 15 minutes for security reasons)
         expire = datetime.utcnow() + timedelta(minutes=15)
-    # Add expiry info into our token (or just use to_encode[exp] = expire)
+    # Add expiry info into our token (ie to_encode["exp"] = expire)
     to_encode.update({"exp":expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-def fake_decode_token(token):
-    # Using Pydantic type casting, having extra keys doesn't matter!
-    return UserInDB(**fake_user_db.get(token))
-    # return User(**fake_user_db.get(token))
-
-
 # Probably should use async if using real database which takes time to load data
-def authenticate_user(fake_db, username, password):
+def authenticate_user(username, password):
     # See if this user exists in our database
-    user = get_user(fake_db, username)
+    user = get_user(username)
     if user is None:
-        return False
+        return None
     # Check to see if they entered the correct password
     if not verify_password(password, user.hashed_password):
-        return False
-    return user
+        return None
+    return User(**user.dict())
 
 
 async def get_current_user(token:str = Depends(oauth2_scheme)):
@@ -146,7 +158,7 @@ async def get_current_user(token:str = Depends(oauth2_scheme)):
     # Decoding the token for the user information
     try:
         payload = jwt.decode(token=token, key=SECRET_KEY, algorithms=[ALGORITHM])
-        # As JWT convention/standards, "sub", or "subject" (as we did when creating the token) should be a unique identifier
+        # As per JWT convention/standards, "sub" (aka subject) should be a unique identifier (as we did when creating the token)
         sub:str = payload.get("sub")
         if sub is None:
             raise credentials_exception
@@ -157,20 +169,14 @@ async def get_current_user(token:str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
     
-    current_user = get_user(fake_user_db, username=token_data.username)
+    current_user = User(**get_user(token_data.username).dict())
     if current_user is None:
         raise credentials_exception
     return current_user
 
 
-async def get_current_user_email(current_user:User = Depends(get_current_user)):
-    if current_user.email is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This user did not provide an email :(")
-    return current_user
-
-
 def get_permissions(current_user:User = Depends(get_current_user)):
-    return Permissions(read=current_user.read, write=current_user.write, delete=current_user.delete)
+    return current_user.permissions
 
 
 @app.get("/")
@@ -178,17 +184,17 @@ def get_root():
     return {"Welcome" : "to the FastAPI version"}
 
 
-@app.get("/secret_page")
-def secret(user:User = Depends(get_current_user_email)):
-    return {"Secret" : "You've found the secret!", "user" : user}
+@app.get("/user-info", response_model=User)
+def get_info(user:User = Depends(get_current_user)):
+    return {"user" : user}
 
 
 @app.post("/api/token", response_model=Token)
 async def login(form_data:OAuth2PasswordRequestForm = Depends(OAuth2PasswordRequestForm)):
     # Retrieving user info from the database (logging in)
-    user = authenticate_user(fake_user_db, form_data.username, form_data.password)
+    user = authenticate_user(form_data.username, form_data.password)
     # If user doesn't exist, or not authenticated
-    if(user == False):
+    if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
     
     # Now that the user has logged in, create a token for them
@@ -211,7 +217,7 @@ async def api_query(query:Query, user_permissions:Permissions = Depends(get_perm
 
 
 @app.post("/api/publish", status_code=status.HTTP_201_CREATED)
-async def api_publish(connection_string:str = Form(), table_name:str = Form(), my_file:UploadFile = File(), user_permissions:Permissions = Depends(get_permissions)):
+async def api_publish(connection_string:Optional[str] = Form(default=None), table_name:Optional[str] = Form(default=None), my_file:UploadFile = File(), user_permissions:Permissions = Depends(get_permissions)):
     # Publishing requires write permissions
     if(not user_permissions.write):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied: you do not have write permissions, please contact your system administrator")
@@ -221,7 +227,7 @@ async def api_publish(connection_string:str = Form(), table_name:str = Form(), m
     table = table_api.connect_to_table(db, table_name)
     entry = table_api.parse_bytes(content)
     table_api.upsert_entry(table, entry)
-    return {"message" : "Successfully published deployment with PartitionKey \"{}\" and RowKey \"{}\" to table \"{}\"!".format(entry["PartitionKey"], entry["RowKey"], table_name)}
+    return {"message" : "Successfully published deployment with PartitionKey \"{}\" and id \"{}\"!".format(entry["PartitionKey"], entry["RowKey"])}
 
 
 @app.post("/api/get", status_code=status.HTTP_200_OK)
@@ -232,11 +238,11 @@ async def api_get(entity:Entity, user_permissions:Permissions = Depends(get_perm
 
     db = table_api.connect_to_db(entity.connection_string)
     table = table_api.connect_to_table(db, entity.table_name)
-    entry = table_api.get_entry(table, entity.partition_key, entity.row_key)
+    entry = table_api.get_entry(table, id=entity.id, partition_key=entity.partition_key)
     if(entry is not None):
         return {"Entry" : entry}
     else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No entity found with the specified PartitionKey and RowKey")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No entity found with the specified PartitionKey and id")
 
 
 @app.post("/api/delete", status_code=status.HTTP_200_OK)
@@ -247,5 +253,5 @@ async def api_delete(entity:Entity, user_permissions:Permissions = Depends(get_p
 
     db = table_api.connect_to_db(entity.connection_string)
     table = table_api.connect_to_table(db, entity.table_name)
-    table_api.delete_entry(table, entity.partition_key, entity.row_key)
-    return {"message" : f"Successfully deleted entry with PartitionKey \"{entity.partition_key}\" and RowKey \"{entity.row_key}\""}
+    table_api.delete_entry(table, id=entity.id, partition_key=entity.partition_key)
+    return {"message" : f"Successfully deleted entry with PartitionKey \"{entity.partition_key}\" and id \"{entity.id}\"!"}
