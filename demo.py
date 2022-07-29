@@ -9,6 +9,7 @@ text_path = "./values.txt"
 payload = {"username":"admin", "password":"adminpw"}
 # payload = {"username":"dev", "password":"devpw"}
 # payload = {"username":"standard_user", "password":"stdpw"}
+# payload = {"username":"bad_credentials", "password":"wrongpw"}
 
 
 print("----------Getting token------------")
