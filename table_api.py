@@ -295,14 +295,19 @@ def cli_get(connection_string:str, text_path:Optional[str]=None, id:Optional[str
         return get_entry(table, id)
 
 
+# Unfortunately, need to exit with an error (raise) or else the pipeline still thinks that the step passed
 def run():
     try:
         command = sys.argv[1]
     except:
         print(help())
+        sys.tracebacklimit = 0
+        raise
 
     if(command == "help" or command == "--help" or command == "-h"):
         print(help())
+        sys.tracebacklimit = 0
+        raise
 
     elif(command == "publish"):
         try:
