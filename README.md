@@ -2,7 +2,7 @@
 
 Built a Flask app (`app.py` not complete, just for experimentation) and a FastAPI app (`fastapi_host.py`) as an API server.
 The app is a microservice that can be hosted on the web (in this case it was hosted on Azure App Services).
-The app includes simple OAuth2 password flow to authenticate users, and a users/credentials database is used to authorize and store roles/permissions.
+The app includes a simple OAuth 2.0 password grant to authenticate users, and a users/credentials database is used to store user credentials and roles/permissions.
 In this case, a CosmosDB TableAPI database was used to store the information, while a CosmosDB core-SQL database was used to store the user credentials.
 
 ## Important endpoints
